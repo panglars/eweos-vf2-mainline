@@ -1,0 +1,44 @@
+name: Weekly Build and Release
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # 每周日 UTC 时间 00:00 运行
+  workflow_dispatch:     # 允许手动触发工作流
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup build environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fdisk 
+      
+      - name: Run build script
+        run: |
+          chmod +x build.sh
+          ./build.sh
+      
+      - name: Generate release date
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+      
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ewe-vf2.img  
+          tag_name: weekly-${{ steps.date.outputs.date }}  
+          name: Weekly Build ${{ steps.date.outputs.date }}  
+          body: |
+            Weekly automated build generated on ${{ steps.date.outputs.date }}.
+            
+            This is an automated release created by GitHub Actions.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
